@@ -1,0 +1,52 @@
+﻿{% extends 'base.html' %}
+{% block title %}Session Attendance{% endblock %}
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1>Attendance: {{ session.course_code }} - {{ session.topic|default:'No topic' }}</h1>
+        <a href="/lecturer/sessions/" class="btn">← Back to Sessions</a>
+    </div>
+    
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Reg No</th>
+                            <th>Status</th>
+                            <th>Check In Time</th>
+                            <th>Check Out Time</th>
+                            <th>Duration</th>
+                            <th>Method</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for record in records %}
+                        <tr>
+                            <td>{{ record.student.user.get_full_name }}</td>
+                            <td>{{ record.student.reg_no }}</td>
+                            <td><span class="badge-present">✓ Present</span></td>
+                            <td>{{ record.check_in_time|time:'H:i:s'|default:'-' }}</td>
+                            <td>{{ record.check_out_time|time:'H:i:s'|default:'-' }}</td>
+                            <td>{{ record.duration_minutes|default:'-' }} min</td>
+                            <td>{{ record.recognition_method }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="7" style="text-align: center;">No attendance records yet</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:15px}
+    .badge-present{background:#d4edda;color:#155724;padding:4px 10px;border-radius:20px;font-size:12px}
+    .btn{padding:10px 20px;background:#667eea;color:white;text-decoration:none;border-radius:8px}
+    @media(max-width:768px){.page-header{flex-direction:column;text-align:center}}
+</style>
+{% endblock %}

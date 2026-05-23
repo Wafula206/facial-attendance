@@ -1,0 +1,99 @@
+﻿{% extends 'base.html' %}
+{% block title %}Create Session{% endblock %}
+{% block content %}
+<div class="form-container">
+    <h1>Create Class Session</h1>
+    <form id="sessionForm">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label>Course *</label>
+            <select id="course_code" required>
+                <option value="">-- Select Course --</option>
+                {% for course in courses %}
+                <option value="{{ course.code }}">{{ course.code }} - {{ course.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>Topic / Title *</label>
+            <input type="text" id="topic" placeholder="e.g., Week 1: Introduction to Computing" required>
+            <small>Example: Week 1: Introduction, Chapter 2: Data Structures</small>
+        </div>
+        
+        <div class="form-group">
+            <label>Venue</label>
+            <input type="text" id="venue" placeholder="e.g., LT1, Lab 3, Online">
+        </div>
+        
+        <div class="form-group">
+            <label>Start Date & Time *</label>
+            <input type="datetime-local" id="start_time" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Duration (hours)</label>
+            <select id="duration">
+                <option value="1">1 hour</option>
+                <option value="2" selected>2 hours</option>
+                <option value="3">3 hours</option>
+            </select>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Create Session</button>
+        <a href="/lecturer/sessions/" class="btn">Cancel</a>
+    </form>
+    <div id="message" style="margin-top:20px;"></div>
+</div>
+
+<style>
+    .form-container{ max-width:550px; margin:0 auto; background:white; padding:30px; border-radius:16px; box-shadow:0 2px 10px rgba(0,0,0,0.1); }
+    .form-group{ margin-bottom:20px; }
+    .form-group label{ display:block; margin-bottom:8px; font-weight:500; color:#333; }
+    .form-group input, .form-group select{ width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; font-size:14px; }
+    .form-group small{ display:block; margin-top:5px; font-size:12px; color:#666; }
+    .btn{ padding:12px 24px; border-radius:8px; text-decoration:none; display:inline-block; margin-right:10px; border:none; cursor:pointer; font-size:14px; }
+    .btn-primary{ background:#667eea; color:white; }
+    .btn-primary:hover{ background:#5a67d8; }
+    .btn{ background:#e9ecef; color:#333; }
+    .btn:hover{ background:#dee2e6; }
+    .success{ background:#d4edda; color:#155724; padding:12px; border-radius:8px; }
+    .error{ background:#f8d7da; color:#721c24; padding:12px; border-radius:8px; }
+</style>
+
+<script>
+    document.getElementById('sessionForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const data = {
+            course_code: document.getElementById('course_code').value,
+            topic: document.getElementById('topic').value,
+            venue: document.getElementById('venue').value,
+            start_time: document.getElementById('start_time').value,
+            duration: document.getElementById('duration').value
+        };
+        
+        fetch('/lecturer/session/create/submit/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('message').innerHTML = '<div class="success">✅ Session created successfully! Redirecting...</div>';
+                setTimeout(() => { window.location.href = '/lecturer/sessions/'; }, 1500);
+            } else {
+                document.getElementById('message').innerHTML = '<div class="error">❌ Error: ' + data.error + '</div>';
+            }
+        })
+        .catch(err => {
+            document.getElementById('message').innerHTML = '<div class="error">❌ Error: ' + err.message + '</div>';
+        });
+    });
+</script>
+{% endblock %}

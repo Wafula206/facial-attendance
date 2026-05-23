@@ -1,0 +1,69 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>CNN Test</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        #video { width: 100%; max-width: 640px; margin: 20px auto; display: block; border: 2px solid #667eea; border-radius: 10px; }
+        button { margin: 10px; padding: 10px 20px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="navbar"><div class="navbar-brand">CNN Test</div></div>
+    <div class="container">
+        <div class="card">
+            <h3>CNN Face Recognition Test</h3>
+            <video id="video" autoplay></video>
+            <canvas id="canvas" style="display:none;"></canvas>
+            <div>
+                <button id="startBtn">Start Camera</button>
+                <button id="captureBtn">Test Recognition</button>
+                <button id="stopBtn">Stop</button>
+            </div>
+            <div id="result"></div>
+        </div>
+    </div>
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const startBtn = document.getElementById('startBtn');
+        const captureBtn = document.getElementById('captureBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const resultDiv = document.getElementById('result');
+        let stream = null;
+        
+        async function startCamera() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+                resultDiv.innerHTML = 'Camera ready';
+            } catch(err) {
+                resultDiv.innerHTML = 'Error: ' + err.message;
+            }
+        }
+        
+        function stopCamera() {
+            if(stream) stream.getTracks().forEach(t => t.stop());
+            video.srcObject = null;
+            resultDiv.innerHTML = 'Camera stopped';
+        }
+        
+        async function testCNN() {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            const response = await fetch('/student/enroll-face-cnn/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: canvas.toDataURL('image/jpeg') })
+            });
+            const data = await response.json();
+            resultDiv.innerHTML = data.message;
+        }
+        
+        startBtn.onclick = startCamera;
+        captureBtn.onclick = testCNN;
+        stopBtn.onclick = stopCamera;
+    </script>
+</body>
+</html>

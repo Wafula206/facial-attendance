@@ -1,0 +1,117 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>CNN Face Test</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .camera-container { position: relative; background: #000; border-radius: 15px; overflow: hidden; aspect-ratio: 4/3; margin-bottom: 20px; }
+        #video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+        #canvas { display: none; }
+        .result-area { margin-top: 20px; padding: 15px; border-radius: 10px; text-align: center; }
+        .success { background: #48bb78; color: white; }
+        .error { background: #f56565; color: white; }
+        .info { background: #4299e1; color: white; }
+        .processing { background: #ed8936; color: white; animation: pulse 1s infinite; }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.7; } }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div class="navbar-brand"><span>🔬</span><span>CNN Test</span></div>
+        <div class="navbar-links"><a href="/student/dashboard/"> Dashboard</a><a href="/logout/"> Logout</a></div>
+    </div>
+    <div class="container">
+        <div class="card">
+            <div class="card-header"><h3>CNN Face Recognition Test</h3></div>
+            <div class="camera-container">
+                <video id="video" autoplay playsinline></video>
+                <canvas id="canvas"></canvas>
+            </div>
+            <div style="text-align:center">
+                <button id="startBtn" class="btn btn-primary"> Start Camera</button>
+                <button id="captureBtn" class="btn btn-success" style="display:none;"> Test CNN</button>
+                <button id="stopBtn" class="btn btn-danger" style="display:none;"> Stop</button>
+            </div>
+            <div id="result" class="result-area info">Click Start Camera</div>
+        </div>
+    </div>
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const startBtn = document.getElementById('startBtn');
+        const captureBtn = document.getElementById('captureBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const resultDiv = document.getElementById('result');
+        let stream = null;
+        let processing = false;
+        
+        async function startCamera() {
+            resultDiv.innerHTML = 'Starting camera...';
+            resultDiv.className = 'result-area processing';
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+                startBtn.style.display = 'none';
+                captureBtn.style.display = 'inline-block';
+                stopBtn.style.display = 'inline-block';
+                resultDiv.innerHTML = 'Camera ready. Click Test CNN.';
+                resultDiv.className = 'result-area success';
+            } catch(err) {
+                resultDiv.innerHTML = 'Camera error: ' + err.message;
+                resultDiv.className = 'result-area error';
+            }
+        }
+        
+        function stopCamera() {
+            if (stream) { stream.getTracks().forEach(t => t.stop()); video.srcObject = null; }
+            startBtn.style.display = 'inline-block';
+            captureBtn.style.display = 'none';
+            stopBtn.style.display = 'none';
+            resultDiv.innerHTML = 'Camera stopped';
+            resultDiv.className = 'result-area info';
+        }
+        
+        async function testCNN() {
+            if (processing) return;
+            processing = true;
+            resultDiv.innerHTML = 'Processing CNN...';
+            resultDiv.className = 'result-area processing';
+            captureBtn.disabled = true;
+            
+            const ctx = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.save();
+            ctx.scale(-1, 1);
+            ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
+            ctx.restore();
+            
+            try {
+                const response = await fetch('/student/enroll-face-cnn/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: canvas.toDataURL('image/jpeg') })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    resultDiv.innerHTML = '✅ ' + data.message;
+                    resultDiv.className = 'result-area success';
+                } else {
+                    resultDiv.innerHTML = '❌ ' + data.message;
+                    resultDiv.className = 'result-area error';
+                }
+            } catch(err) {
+                resultDiv.innerHTML = '❌ Error: ' + err.message;
+                resultDiv.className = 'result-area error';
+            } finally {
+                processing = false;
+                captureBtn.disabled = false;
+            }
+        }
+        
+        startBtn.onclick = startCamera;
+        captureBtn.onclick = testCNN;
+        stopBtn.onclick = stopCamera;
+    </script>
+</body>
+</html>

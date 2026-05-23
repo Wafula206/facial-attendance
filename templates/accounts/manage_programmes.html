@@ -1,0 +1,32 @@
+﻿{% extends 'base.html' %}
+{% block title %}Manage Programmes{% endblock %}
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1>Manage Programmes</h1>
+        <a href="/admin-dashboard/programmes/create/" class="btn btn-primary">+ Create Programme</a>
+    </div>
+    
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead><tr><th>Code</th><th>Name</th><th>Duration</th><th>Actions</th></tr></thead>
+                    <tbody>
+                        {% for programme in programmes %}
+                        <tr>
+                            <td>{{ programme.code }}</td><td>{{ programme.name }}</td><td>{{ programme.duration_years }} years</td>
+                            <td class="actions">
+                                <a href="/admin-dashboard/programmes/edit/{{ programme.id }}/" class="btn-sm">✏️ Edit</a>
+                                <a href="/admin-dashboard/programmes/delete/{{ programme.id }}/" class="btn-sm btn-danger" onclick="return confirm('Delete this programme?')">🗑️ Delete</a>
+                            </td>
+                        </tr>
+                        {% empty %}<tr><td colspan="4" style="text-align: center;">No programmes found</td></tr>{% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<style>.page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:15px}.btn-sm{padding:5px 12px;background:#667eea;color:white;text-decoration:none;border-radius:5px;font-size:12px}.btn-danger{background:#e74c3c}.actions{display:flex;gap:8px;flex-wrap:wrap}@media(max-width:768px){.page-header{flex-direction:column;text-align:center}}</style>
+{% endblock %}

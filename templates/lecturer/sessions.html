@@ -1,0 +1,77 @@
+﻿{% extends 'base.html' %}
+{% block title %}My Sessions{% endblock %}
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1>My Class Sessions</h1>
+        <a href="/lecturer/session/create/" class="btn btn-primary">+ Create Session</a>
+    </div>
+    
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Course</th>
+                            <th>Topic</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Venue</th>
+                            <th>Status</th>
+                            <th>Attendance</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for session in sessions %}
+                        <tr>
+                            <td><strong>{{ session.course_code }}</strong><br><small>{{ session.course_name|truncatechars:20 }}</small></td>
+                            <td>{{ session.topic|default:'-' }}</td>
+                            <td>{{ session.start_time|date:'M d, Y' }}</td>
+                            <td>{{ session.start_time|time:'H:i' }} - {{ session.end_time|time:'H:i' }}</td>
+                            <td>{{ session.venue|default:'TBA' }}</td>
+                            <td>
+                                {% if session.status == 'ongoing' %}
+                                    <span class="badge-ongoing">Ongoing</span>
+                                {% elif session.status == 'completed' %}
+                                    <span class="badge-completed">Completed</span>
+                                {% else %}
+                                    <span class="badge-scheduled">Scheduled</span>
+                                {% endif %}
+                            </td>
+                            <td><a href="/lecturer/session/{{ session.id }}/attendance/" class="btn-small">View</a></td>
+                            <td class="actions">
+                                {% if session.status == 'scheduled' %}
+                                    <a href="/lecturer/session/{{ session.id }}/start/" class="btn-small btn-success" onclick="return confirm('Start this session?')">▶️ Start</a>
+                                {% endif %}
+                                {% if session.status == 'ongoing' %}
+                                    <a href="/lecturer/session/{{ session.id }}/end/" class="btn-small btn-warning" onclick="return confirm('End this session?')">⏹️ End</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="8" style="text-align:center">No sessions found</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:15px}
+    .badge-ongoing{background:#d4edda;color:#155724;padding:4px 10px;border-radius:20px;font-size:12px}
+    .badge-completed{background:#cfe2ff;color:#004085;padding:4px 10px;border-radius:20px}
+    .badge-scheduled{background:#fff3cd;color:#856404;padding:4px 10px;border-radius:20px}
+    .btn-small{padding:5px 12px;background:#667eea;color:white;text-decoration:none;border-radius:5px;font-size:12px;display:inline-block;margin:2px}
+    .btn-success{background:#28a745}
+    .btn-warning{background:#ffc107;color:#333}
+    .actions{display:flex;gap:5px;flex-wrap:wrap}
+    .table-responsive{overflow-x:auto}
+    .table{width:100%;border-collapse:collapse}
+    .table th,.table td{padding:12px;text-align:left;border-bottom:1px solid #e9ecef}
+    @media(max-width:768px){.page-header{flex-direction:column;text-align:center}}
+</style>
+{% endblock %}

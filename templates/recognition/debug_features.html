@@ -1,0 +1,143 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>CNN Feature Extraction Debug</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .camera-container { background: #000; border-radius: 15px; overflow: hidden; margin-bottom: 20px; }
+        #video { width: 100%; background: #000; }
+        #canvas { display: none; }
+        .features-panel { background: white; border-radius: 15px; padding: 20px; margin-top: 20px; }
+        .feature-box { background: #f0f0f0; padding: 15px; border-radius: 10px; margin: 10px 0; }
+        .feature-value { font-size: 2rem; font-weight: bold; color: #667eea; }
+        .keypoint-image { max-width: 100%; border-radius: 10px; margin: 10px 0; }
+        .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+        .badge-success { background: #c6f6d5; color: #22543d; }
+        .btn { padding: 10px 20px; margin: 5px; cursor: pointer; border: none; border-radius: 5px; }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-success { background: #48bb78; color: white; }
+        .btn-danger { background: #f56565; color: white; }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div class="navbar-brand"><span>🔬</span><span>CNN Feature Extraction Debug</span></div>
+        <div class="navbar-links">
+            <a href="/recognition/">Recognition</a>
+            <a href="/student/dashboard/">Dashboard</a>
+            <a href="/logout/">Logout</a>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="camera-container">
+            <video id="video" autoplay playsinline></video>
+            <canvas id="canvas"></canvas>
+        </div>
+        
+        <div style="text-align: center;">
+            <button id="startBtn" class="btn btn-primary">Start Camera</button>
+            <button id="extractBtn" class="btn btn-success" style="display:none;">Extract CNN Features</button>
+            <button id="stopBtn" class="btn btn-danger" style="display:none;">Stop Camera</button>
+        </div>
+        
+        <div id="featuresPanel" class="features-panel" style="display:none;">
+            <h3>📊 Extracted CNN Features</h3>
+            <div class="feature-box">
+                <div>Number of Keypoints Detected:</div>
+                <div class="feature-value" id="numKeypoints">0</div>
+            </div>
+            <div class="feature-box">
+                <div>Feature Descriptor Shape:</div>
+                <div class="feature-value" id="descriptorShape">0 x 0</div>
+            </div>
+            <div class="feature-box">
+                <div>Total Features Extracted:</div>
+                <div class="feature-value" id="numFeatures">0</div>
+            </div>
+            <div id="keypointImage"></div>
+            <div id="featureStatus"></div>
+        </div>
+    </div>
+    
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const startBtn = document.getElementById('startBtn');
+        const extractBtn = document.getElementById('extractBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const featuresPanel = document.getElementById('featuresPanel');
+        
+        let stream = null;
+        
+        async function startCamera() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+                startBtn.style.display = 'none';
+                extractBtn.style.display = 'inline-block';
+                stopBtn.style.display = 'inline-block';
+                featuresPanel.style.display = 'none';
+            } catch(err) {
+                alert('Camera error: ' + err.message);
+            }
+        }
+        
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(t => t.stop());
+                video.srcObject = null;
+            }
+            startBtn.style.display = 'inline-block';
+            extractBtn.style.display = 'none';
+            stopBtn.style.display = 'none';
+            featuresPanel.style.display = 'none';
+        }
+        
+        async function extractFeatures() {
+            const ctx = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            const imageData = canvas.toDataURL('image/jpeg', 0.9);
+            
+            featuresPanel.style.display = 'block';
+            document.getElementById('numKeypoints').innerHTML = 'Processing...';
+            document.getElementById('descriptorShape').innerHTML = 'Processing...';
+            document.getElementById('numFeatures').innerHTML = 'Processing...';
+            
+            try {
+                const response = await fetch('/api/extract-features/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: imageData })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('numKeypoints').innerHTML = data.num_keypoints;
+                    document.getElementById('descriptorShape').innerHTML = data.descriptor_shape[0] + ' x ' + data.descriptor_shape[1];
+                    document.getElementById('numFeatures').innerHTML = data.num_features;
+                    
+                    if (data.image_with_keypoints) {
+                        document.getElementById('keypointImage').innerHTML = '<h4>Face with Detected Keypoints (CNN ORB Features):</h4><img src="data:image/jpeg;base64,' + data.image_with_keypoints + '" class="keypoint-image">';
+                    }
+                    
+                    document.getElementById('featureStatus').innerHTML = '<div class="badge badge-success">CNN Feature Extraction Successful!</div><p>ORB features extracted successfully.</p><p>These ' + data.num_features + ' features will be used for face matching.</p>';
+                } else {
+                    document.getElementById('featureStatus').innerHTML = '<div class="badge" style="background:#f56565; color:white;">' + data.message + '</div>';
+                }
+            } catch(err) {
+                document.getElementById('featureStatus').innerHTML = '<div class="badge" style="background:#f56565; color:white;">Error: ' + err.message + '</div>';
+            }
+        }
+        
+        startBtn.onclick = startCamera;
+        extractBtn.onclick = extractFeatures;
+        stopBtn.onclick = stopCamera;
+    </script>
+</body>
+</html>

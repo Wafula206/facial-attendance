@@ -1,0 +1,16 @@
+﻿{% extends 'base.html' %}
+{% block title %}Edit Programme{% endblock %}
+{% block content %}
+<div class="form-container">
+    <h1>Edit Programme: {{ programme.code }}</h1>
+    <form method="POST">
+        {% csrf_token %}
+        <div class="form-group"><label>Programme Code *</label><input type="text" name="code" value="{{ programme.code }}" required></div>
+        <div class="form-group"><label>Programme Name *</label><input type="text" name="name" value="{{ programme.name }}" required></div>
+        <div class="form-group"><label>Duration (Years) *</label><select name="duration_years"><option value="3" {% if programme.duration_years == 3 %}selected{% endif %}>3 Years</option><option value="4" {% if programme.duration_years == 4 %}selected{% endif %}>4 Years</option><option value="5" {% if programme.duration_years == 5 %}selected{% endif %}>5 Years</option></select></div>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+        <a href="/admin-dashboard/programmes/" class="btn">Cancel</a>
+    </form>
+</div>
+<style>.form-container{max-width:500px;margin:0 auto;background:white;padding:30px;border-radius:16px}.form-group{margin-bottom:20px}.form-group label{display:block;margin-bottom:8px;font-weight:500}.form-group input,.form-group select{width:100%;padding:12px;border:1px solid #ddd;border-radius:8px}.btn{padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin-right:10px;border:none;cursor:pointer}.btn-primary{background:#667eea;color:white}</style>
+{% endblock %}

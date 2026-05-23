@@ -1,0 +1,40 @@
+﻿{% extends 'base.html' %}
+{% block title %}My Profile{% endblock %}
+{% block content %}
+<div class="container">
+    <h1>My Profile</h1>
+    <div class="card">
+        <div class="card-body">
+            <table class="table">
+                <tr>
+                    <th>Username:</th>
+                    <td>{{ user.username }}</td>
+                </tr>
+                <tr>
+                    <th>Full Name:</th>
+                    <td>{{ user.get_full_name|default:'Not set' }}</td>
+                </tr>
+                <tr>
+                    <th>Email:</th>
+                    <td>{{ user.email|default:'Not set' }}</td>
+                </tr>
+                <tr>
+                    <th>Registration Number:</th>
+                    <td>{{ user.reg_no|default:'Not set' }}</td>
+                </tr>
+                <tr>
+                    <th>Face Enrolled:</th>
+                    <td>{% if user.is_face_registered %}
+                        <span style="color: green;">✓ Yes</span>
+                        {% else %}
+                        <span style="color: orange;">✗ No</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            </table>
+            <a href="/student/enroll-face/" class="btn">Enroll Face</a>
+            <a href="/student/dashboard/" class="btn">Back to Dashboard</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

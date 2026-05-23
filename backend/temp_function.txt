@@ -1,0 +1,61 @@
+﻿@login_required
+@staff_member_required
+def course_students(request, course_code):
+    """View all students enrolled in a course"""
+    navbar = get_navbar(request, 'courses')
+    course = get_object_or_404(Course, code=course_code)
+    students = StudentProfile.objects.filter(enrolled_courses__code=course.code).select_related('user')
+    
+    html = f'''
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Course Students | {course.code}</title>
+        <link rel="stylesheet" href="/static/css/style.css">
+    </head>
+    <body>
+        {navbar}
+        
+        <div class="container">
+            <div class="card">
+                <div class="card-header">
+                    <h2> Students Enrolled in {course.code} - {course.name}</h2>
+                    <div>
+                        <a href="/admin-dashboard/courses/" class="btn btn-primary"> Back to Courses</a>
+                    </div>
+                </div>
+                
+                <div class="stats-grid" style="margin-bottom:20px;">
+                    <div class="stat-card"><div class="stat-value">{students.count()}</div><div>Enrolled Students</div></div>
+                    <div class="stat-card"><div class="stat-value">{course.max_students if course.max_students else "Not set"}</div><div>Max Capacity</div></div>
+                    <div class="stat-card"><div class="stat-value">{course.get_available_seats() if course.has_capacity_set() else "N/A"}</div><div>Available Seats</div></div>
+                </div>
+                
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr><th>Reg No</th><th>Student Name</th><th>Email</th><th>Programme</th><th>Year</th><th>Actions</th></tr>
+                        </thead>
+                        <tbody>
+                            {''.join([f'''
+                            <tr>
+                                <td>{s.user.reg_no or "N/A"}</d>
+                                <td>{s.user.get_full_name()}</d>
+                                <td>{s.user.email}</d>
+                                <td>{s.programme.name if s.programme else "N/A"}</d>
+                                <td>Year {s.year_of_study}</d>
+                                <td>
+                                    <a href="/admin/accounts/studentprofile/{s.id}/change/" class="btn btn-primary btn-sm">Edit</a>
+                                    <a href="/admin-dashboard/courses/{course.code}/remove-student/{s.id}/" class="btn btn-danger btn-sm">Remove</a>
+                                </d>
+                             </d>
+                            ''' for s in students]) or '<tr><td colspan="6">No students enrolled in this course</d'}
+                        </tbody>
+                    ……>
+                </div>
+            </div>
+        </div>
+    </body>
+    </html>
+    '''
+    return HttpResponse(html)

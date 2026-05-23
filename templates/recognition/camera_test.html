@@ -1,0 +1,68 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>Camera Test</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #f0f2f5; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px; }
+        video { margin-top: 20px; border: 1px solid #ccc; border-radius: 5px; }
+        .log { background: #f8f9fa; padding: 10px; margin-top: 20px; border-radius: 5px; font-family: monospace; font-size: 12px; height: 200px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>📷 Camera Test</h2>
+    <p>This page tests if your camera works in the browser.</p>
+    
+    <button id="testBtn">Test Camera</button>
+    
+    <div id="result" style="margin-top: 10px;"></div>
+    <video id="video" width="500" height="400" autoplay style="display:none;"></video>
+    
+    <div class="log" id="log">
+        <strong>Log:</strong><br>
+        Ready to test...
+    </div>
+</div>
+
+<script>
+    const testBtn = document.getElementById('testBtn');
+    const video = document.getElementById('video');
+    const resultDiv = document.getElementById('result');
+    const logDiv = document.getElementById('log');
+    
+    function addLog(msg) {
+        logDiv.innerHTML += <br>: ;
+        console.log(msg);
+    }
+    
+    testBtn.onclick = async function() {
+        addLog('Requesting camera access...');
+        resultDiv.innerHTML = 'Requesting camera...';
+        
+        try {
+            addLog('Calling getUserMedia...');
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { width: 640, height: 480 } 
+            });
+            addLog('✅ Camera access granted!');
+            resultDiv.innerHTML = '<span style="color:green;">✅ Camera working!</span>';
+            video.style.display = 'block';
+            video.srcObject = stream;
+            addLog('Video feed started');
+        } catch (err) {
+            addLog('❌ Error: ' + err.message);
+            resultDiv.innerHTML = '<span style="color:red;">❌ Camera error: ' + err.message + '</span>';
+            if (err.name === 'NotAllowedError') {
+                addLog('Permission denied - click the camera icon in address bar to allow');
+            } else if (err.name === 'NotFoundError') {
+                addLog('No camera found on this device');
+            }
+        }
+    };
+    
+    addLog('Page loaded. Click Test Camera button.');
+</script>
+</body>
+</html>

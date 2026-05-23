@@ -1,0 +1,58 @@
+﻿{% extends 'base.html' %}
+{% block title %}My Courses{% endblock %}
+{% block content %}
+<div class="courses-page">
+    <div class="page-header">
+        <h1>My Enrolled Courses</h1>
+        <a href="/student/available-courses/" class="btn">📚 Browse Available Courses → →</a>
+    </div>
+    
+    <div class="courses-grid">
+        {% for course in courses %}
+        <div class="course-card">
+            <div class="course-header">
+                <span class="course-code">{{ course.code }}</span>
+                <span class="course-credits">{{ course.credits }} credits</span>
+            </div>
+            <h4>{{ course.name }}</h4>
+            <p class="course-lecturer">{{ course.lecturer.user.get_full_name|default:'No lecturer' }}</p>
+            <div class="course-progress">
+                <div class="progress-label">
+                    <span>Attendance</span>
+                    <span>{{ course.attendance_rate }}%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ course.attendance_rate }}%; background: {% if course.attendance_rate >= 75 %}#28a745{% elif course.attendance_rate >= 50 %}#ffc107{% else %}#dc3545{% endif %};"></div>
+                </div>
+            </div>
+            <a href="/student/course/{{ course.code }}/" class="btn-view">View Details →</a>
+        </div>
+        {% empty %}
+        <div class="empty-state">
+            <p>You haven't enrolled in any courses yet.</p>
+            <a href="/student/available-courses/" class="btn-dashboard">📚 Browse Available Courses →</a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+<style>
+    .courses-page{ padding:20px; max-width:1200px; margin:0 auto; }
+    .page-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:15px; }
+    .courses-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:20px; }
+    .course-card{ background:white; border-radius:16px; padding:20px; box-shadow:0 2px 10px rgba(0,0,0,0.05); }
+    .course-header{ display:flex; justify-content:space-between; margin-bottom:12px; }
+    .course-code{ background:#667eea; color:white; padding:4px 12px; border-radius:20px; font-size:12px; }
+    .course-credits{ color:#666; font-size:12px; }
+    .course-card h4{ margin-bottom:8px; }
+    .course-lecturer{ color:#666; font-size:13px; margin-bottom:15px; }
+    .course-progress{ margin:15px 0; }
+    .progress-label{ display:flex; justify-content:space-between; font-size:12px; margin-bottom:5px; }
+    .progress-bar{ background:#e9ecef; border-radius:10px; height:8px; overflow:hidden; }
+    .progress-fill{ height:100%; border-radius:10px; }
+    .btn-view{ display:inline-block; padding:8px 16px; background:#f0f2f5; color:#667eea; text-decoration:none; border-radius:8px; font-size:13px; }
+    .empty-state{ text-align:center; padding:60px; background:#f8f9fa; border-radius:16px; }
+    .btn-dashboard{ background:#28a745; color:white; padding:10px 20px; border-radius:8px; text-decoration:none; display:inline-block; margin-top:15px; }
+    @media(max-width:768px){ .page-header{ flex-direction:column; text-align:center; } }
+</style>
+{% endblock %}
+

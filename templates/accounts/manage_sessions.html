@@ -1,0 +1,74 @@
+﻿{% extends 'base.html' %}
+{% block title %}Manage Sessions{% endblock %}
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1>Manage Class Sessions</h1>
+        <a href="/admin-dashboard/sessions/create/" class="btn btn-primary">+ Create Session</a>
+    </div>
+    
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Course Code</th>
+                            <th>Course Name</th>
+                            <th>Date & Time</th>
+                            <th>Venue</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for session in sessions %}
+                        <tr>
+                            <td><strong>{{ session.course_code }}</strong></td>
+                            <td>{{ session.course_name }}</td>
+                            <td>{{ session.start_time|date:'M d, Y' }}<br>{{ session.start_time|time:'H:i' }} - {{ session.end_time|time:'H:i' }}</td>
+                            <td>{{ session.venue|default:'TBA' }}</td>
+                            <td>
+                                {% if session.status == 'ongoing' %}
+                                    <span class="badge-ongoing">🟢 Ongoing</span>
+                                {% elif session.status == 'completed' %}
+                                    <span class="badge-completed">✅ Completed</span>
+                                {% else %}
+                                    <span class="badge-scheduled">📅 Scheduled</span>
+                                {% endif %}
+                            </td>
+                            <td class="actions">
+                                {% if session.status == 'scheduled' %}
+                                    <a href="/admin-dashboard/sessions/start/{{ session.id }}/" class="btn-sm btn-success" onclick="return confirm('Start this session?')">▶️ Start</a>
+                                {% endif %}
+                                {% if session.status == 'ongoing' %}
+                                    <a href="/admin-dashboard/sessions/end/{{ session.id }}/" class="btn-sm btn-warning" onclick="return confirm('End this session?')">⏹️ End</a>
+                                {% endif %}
+                                <a href="/admin-dashboard/sessions/{{ session.id }}/attendance/" class="btn-sm">📊 View Attendance</a>
+                                <a href="/admin-dashboard/sessions/delete/{{ session.id }}/" class="btn-sm btn-danger" onclick="return confirm('Delete this session?')">🗑️ Delete</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="6" style="text-align: center;">No sessions found</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<style>
+    .page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:15px}
+    .table-responsive{overflow-x:auto}
+    .table{width:100%;min-width:700px}
+    .badge-ongoing{background:#d4edda;color:#155724;padding:4px 10px;border-radius:20px;font-size:12px}
+    .badge-completed{background:#cfe2ff;color:#004085;padding:4px 10px;border-radius:20px;font-size:12px}
+    .badge-scheduled{background:#fff3cd;color:#856404;padding:4px 10px;border-radius:20px;font-size:12px}
+    .btn-sm{padding:5px 12px;background:#667eea;color:white;text-decoration:none;border-radius:5px;font-size:12px;display:inline-block;margin:2px}
+    .btn-success{background:#28a745}
+    .btn-warning{background:#ffc107;color:#333}
+    .btn-danger{background:#e74c3c}
+    .actions{display:flex;gap:5px;flex-wrap:wrap}
+    @media(max-width:768px){.page-header{flex-direction:column;text-align:center}}
+</style>
+{% endblock %}

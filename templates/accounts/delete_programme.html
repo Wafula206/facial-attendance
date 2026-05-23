@@ -1,0 +1,27 @@
+﻿{% extends 'base.html' %}
+{% block title %}Delete Programme{% endblock %}
+{% block content %}
+<div class="delete-container">
+    <div class="delete-card">
+        <div class="delete-icon">⚠️</div>
+        <h1>Delete Programme</h1>
+        <p>Are you sure you want to delete <strong>{{ programme.code }} - {{ programme.name }}</strong>?</p>
+        <p class="warning">Warning: This action cannot be undone!</p>
+        
+        <form method="POST">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">Yes, Delete Programme</button>
+            <a href="/admin-dashboard/programmes/" class="btn">Cancel</a>
+        </form>
+    </div>
+</div>
+<style>
+    .delete-container{ display:flex; justify-content:center; align-items:center; min-height:400px; }
+    .delete-card{ background:white; border-radius:16px; padding:40px; text-align:center; max-width:450px; box-shadow:0 10px 40px rgba(0,0,0,0.1); }
+    .delete-icon{ font-size:60px; margin-bottom:20px; }
+    .warning{ color:#e74c3c; margin:20px 0; font-size:14px; }
+    .btn{ padding:12px 24px; border-radius:8px; text-decoration:none; display:inline-block; margin:10px; border:none; cursor:pointer; font-size:14px; }
+    .btn-danger{ background:#e74c3c; color:white; }
+    .btn{ background:#e9ecef; color:#333; }
+</style>
+{% endblock %}

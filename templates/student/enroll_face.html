@@ -1,0 +1,125 @@
+﻿{% extends 'base.html' %}
+{% block title %}Enroll Face{% endblock %}
+{% block content %}
+<div class="enroll-container">
+    <div class="enroll-card">
+        <h1>📸 Face Enrollment</h1>
+        <p>Position your face clearly in front of the camera. Ensure good lighting.</p>
+        
+        <div class="video-container">
+            <video id="video" width="480" height="360" autoplay playsinline style="border:2px solid #ddd; border-radius:10px;"></video>
+            <canvas id="canvas" width="480" height="360" style="display:none;"></canvas>
+        </div>
+        
+        <div class="button-group">
+            <button class="btn btn-primary" onclick="startCamera()">🎥 Start Camera</button>
+            <button class="btn btn-success" onclick="captureAndEnroll()">📸 Capture & Enroll</button>
+        </div>
+        
+        <div id="result" class="result-message"></div>
+        
+        <div class="tips">
+            <h4>💡 Tips for best results:</h4>
+            <ul>
+                <li>Ensure good lighting on your face</li>
+                <li>Look directly at the camera</li>
+                <li>Remove glasses if possible</li>
+                <li>Keep a neutral expression</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<style>
+    .enroll-container{ display:flex; justify-content:center; align-items:center; min-height:80vh; padding:20px; }
+    .enroll-card{ background:white; border-radius:20px; padding:30px; max-width:600px; width:100%; box-shadow:0 10px 40px rgba(0,0,0,0.1); text-align:center; }
+    .enroll-card h1{ margin-bottom:10px; color:#333; }
+    .enroll-card p{ color:#666; margin-bottom:20px; }
+    .video-container{ margin-bottom:20px; background:#f0f2f5; border-radius:10px; padding:10px; }
+    video{ width:100%; height:auto; background:#333; border-radius:10px; }
+    .button-group{ display:flex; gap:15px; justify-content:center; margin-bottom:20px; }
+    .btn{ padding:12px 24px; border:none; border-radius:8px; font-size:14px; cursor:pointer; transition:all 0.3s; }
+    .btn-primary{ background:#667eea; color:white; }
+    .btn-primary:hover{ background:#5a67d8; transform:translateY(-2px); }
+    .btn-success{ background:#28a745; color:white; }
+    .btn-success:hover{ background:#1e7e34; transform:translateY(-2px); }
+    .result-message{ margin-top:15px; padding:10px; border-radius:8px; }
+    .result-message.success{ background:#d4edda; color:#155724; }
+    .result-message.error{ background:#f8d7da; color:#721c24; }
+    .tips{ text-align:left; margin-top:20px; padding-top:20px; border-top:1px solid #eee; }
+    .tips h4{ margin-bottom:10px; color:#333; }
+    .tips ul{ margin:0; padding-left:20px; }
+    .tips li{ color:#666; margin:5px 0; }
+</style>
+
+<script>
+    let video = document.getElementById('video');
+    let canvas = document.getElementById('canvas');
+    let context = canvas.getContext('2d');
+    let stream = null;
+    
+    function startCamera() {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+        
+        navigator.mediaDevices.getUserMedia({ 
+            video: { width: 480, height: 360, facingMode: "user" } 
+        })
+        .then(s => {
+            stream = s;
+            video.srcObject = stream;
+            video.play();
+            showResult('Camera started. Position your face and click Capture.', 'info');
+        })
+        .catch(err => {
+            showResult('Camera error: ' + err.message, 'error');
+        });
+    }
+    
+    function captureAndEnroll() {
+        if (!video.videoWidth) {
+            showResult('Please start the camera first', 'error');
+            return;
+        }
+        
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        // Get image as JPEG
+        let imageData = canvas.toDataURL('image/jpeg', 0.9);
+        
+        showResult('Processing... Please wait', 'info');
+        
+        fetch('/student/enroll-face/submit/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image: imageData })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showResult('✅ ' + data.message + ' - ' + data.features + ' features extracted!', 'success');
+                setTimeout(() => {
+                    window.location.href = '/student/dashboard/';
+                }, 2000);
+            } else {
+                showResult('❌ ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            showResult('❌ Error: ' + error.message, 'error');
+        });
+    }
+    
+    function showResult(message, type) {
+        let resultDiv = document.getElementById('result');
+        resultDiv.innerHTML = message;
+        resultDiv.className = 'result-message ' + type;
+    }
+    
+    // Auto-start camera on page load
+    startCamera();
+</script>
+{% endblock %}

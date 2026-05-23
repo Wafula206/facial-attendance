@@ -1,0 +1,15 @@
+﻿{% extends 'base.html' %}
+{% block title %}Delete Session{% endblock %}
+{% block content %}
+<div class="form-container" style="text-align:center">
+    <h1>Delete Session</h1>
+    <p>Are you sure you want to delete session for <strong>{{ session.course_code }}</strong> on <strong>{{ session.start_time|date:'M d, Y H:i' }}</strong>?</p>
+    <p style="color:red;">Warning: This action cannot be undone!</p>
+    <form method="POST">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Yes, Delete</button>
+        <a href="/admin-dashboard/sessions/" class="btn">Cancel</a>
+    </form>
+</div>
+<style>.form-container{max-width:400px;margin:50px auto;background:white;padding:30px;border-radius:16px}.btn{padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin:10px;border:none;cursor:pointer}.btn-danger{background:#e74c3c;color:white}</style>
+{% endblock %}

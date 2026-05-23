@@ -1,0 +1,28 @@
+﻿@login_required
+@user_passes_test(is_admin)
+def create_session(request):
+    courses = Course.objects.select_related('programme').all()
+    if request.method == 'POST':
+        course_id = request.POST.get('course')
+        topic = request.POST.get('topic')
+        venue = request.POST.get('venue')
+        start_date = request.POST.get('start_date')
+        start_time = request.POST.get('start_time')
+        duration = int(request.POST.get('duration', 2))
+        course = get_object_or_404(Course, id=course_id)
+        from datetime import datetime
+        start_datetime = datetime.strptime(f"{start_date} {start_time}", "%Y-%m-%d %H:%M")
+        end_datetime = start_datetime + timezone.timedelta(hours=duration)
+        ClassSession.objects.create(
+            id=uuid.uuid4(),
+            course_code=course.code,
+            course_name=course.name,
+            topic=topic,
+            start_time=start_datetime,
+            end_time=end_datetime,
+            venue=venue,
+            status='scheduled'
+        )
+        messages.success(request, f'Session created for {course.code}')
+        return redirect('/admin-dashboard/sessions/')
+    return render(request, 'accounts/create_session.html', {'courses': courses})

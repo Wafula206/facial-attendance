@@ -1,0 +1,234 @@
+﻿{% extends 'base.html' %}
+{% block title %}Analytics Dashboard{% endblock %}
+{% block content %}
+<div class="reports-container">
+    <div class="page-header">
+        <h1>📊 Analytics & Reports Dashboard</h1>
+        <a href="/admin-dashboard/reports/export/full/" class="btn btn-success">📥 Export Full Report</a>
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <div class="metric-icon">👨‍🎓</div>
+            <div class="metric-info">
+                <h3>{{ total_students }}</h3>
+                <p>Total Students</p>
+            </div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-icon">👨‍🏫</div>
+            <div class="metric-info">
+                <h3>{{ total_lecturers }}</h3>
+                <p>Total Lecturers</p>
+            </div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-icon">📚</div>
+            <div class="metric-info">
+                <h3>{{ total_courses }}</h3>
+                <p>Active Courses</p>
+            </div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-icon">🎓</div>
+            <div class="metric-info">
+                <h3>{{ total_programmes }}</h3>
+                <p>Programmes</p>
+            </div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-icon">📋</div>
+            <div class="metric-info">
+                <h3>{{ total_sessions }}</h3>
+                <p>Total Sessions</p>
+            </div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-icon">✅</div>
+            <div class="metric-info">
+                <h3>{{ total_attendance }}</h3>
+                <p>Attendance Records</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overall Attendance Rate -->
+    <div class="rate-card">
+        <div class="rate-info">
+            <h3>Overall Attendance Rate</h3>
+            <div class="rate-circle">
+                <span class="rate-value">{{ attendance_rate }}%</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: {{ attendance_rate }}%; background: {% if attendance_rate >= 75 %}#28a745{% elif attendance_rate >= 50 %}#ffc107{% else %}#dc3545{% endif %};"></div>
+            </div>
+        </div>
+        {% if active_semester %}
+        <div class="active-semester">
+            <span>📅 Active Semester:</span>
+            <strong>{{ active_semester.name }}</strong>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Monthly Trends -->
+    <div class="trends-card">
+        <div class="card-header">
+            <h3>📈 Monthly Attendance Trends</h3>
+        </div>
+        <div class="card-body">
+            <div class="chart-bars">
+                {% for data in monthly_data %}
+                <div class="bar-item">
+                    <div class="bar" style="height: {% widthratio data.attendance total_attendance 100 %}px; max-height: 150px;"></div>
+                    <span class="bar-label">{{ data.month }}</span>
+                    <span class="bar-value">{{ data.attendance }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Course-wise Attendance -->
+    <div class="card">
+        <div class="card-header">
+            <h3>📚 Course-wise Attendance</h3>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr><th>Course</th><th>Sessions</th><th>Total Attendance</th><th>Attendance Rate</th><th>Export</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for data in course_attendance %}
+                        <tr>
+                            <td><strong>{{ data.course.code }}</strong><br><small>{{ data.course.name|truncatechars:30 }}</small></td>
+                            <td>{{ data.sessions }}</td>
+                            <td>{{ data.attendance }}</td>
+                            <td>
+                                <div class="rate-progress">
+                                    <div class="rate-fill" style="width: {{ data.rate }}%; background: {% if data.rate >= 75 %}#28a745{% elif data.rate >= 50 %}#ffc107{% else %}#dc3545{% endif %};">
+                                        <span>{{ data.rate }}%</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><a href="/admin-dashboard/reports/export/course/{{ data.course.id }}/" class="btn-small">Export</a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Programme Statistics -->
+    <div class="card">
+        <div class="card-header">
+            <h3>🎓 Programme-wise Statistics</h3>
+        </div>
+        <div class="card-body">
+            <div class="stats-grid">
+                {% for stat in programme_stats %}
+                <div class="stat-item">
+                    <div class="stat-title">{{ stat.programme.code }}</div>
+                    <div class="stat-value">{{ stat.students }}</div>
+                    <div class="stat-label">Students</div>
+                    <div class="stat-sub">{{ stat.courses }} courses</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Performing Students -->
+    <div class="card">
+        <div class="card-header">
+            <h3>🏆 Top Performing Students</h3>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead><tr><th>Rank</th><th>Student Name</th><th>Registration No</th><th>Programme</th><th>Classes Attended</th></tr></thead>
+                    <tbody>
+                        {% for student in top_students %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ student.user.get_full_name }}</td>
+                            <td>{{ student.reg_no }}</td>
+                            <td>{{ student.programme.code|default:'-' }}</td>
+                            <td>{{ student.attendance_count }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lecturer Performance -->
+    <div class="card">
+        <div class="card-header">
+            <h3>👨‍🏫 Lecturer Performance</h3>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr><th>Lecturer</th><th>Department</th><th>Courses</th><th>Sessions</th><th>Total Attendance</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for stat in lecturer_stats %}
+                        <tr>
+                            <td>{{ stat.lecturer.user.get_full_name }}</td>
+                            <td>{{ stat.lecturer.department|default:'-' }}</td>
+                            <td>{{ stat.courses }}</td>
+                            <td>{{ stat.sessions }}</td>
+                            <td>{{ stat.attendance }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .reports-container{ padding:20px; max-width:1400px; margin:0 auto; }
+    .page-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:15px; }
+    .metrics-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:15px; margin-bottom:25px; }
+    .metric-card{ background:white; border-radius:12px; padding:20px; display:flex; align-items:center; gap:15px; box-shadow:0 2px 10px rgba(0,0,0,0.05); }
+    .metric-icon{ font-size:35px; }
+    .metric-info h3{ font-size:28px; font-weight:700; color:#333; margin:0; }
+    .metric-info p{ color:#666; font-size:13px; margin:5px 0 0; }
+    .rate-card{ background:linear-gradient(135deg,#667eea 0%,#764ba2 100%); border-radius:16px; padding:25px; margin-bottom:25px; color:white; }
+    .rate-info{ text-align:center; }
+    .rate-circle{ margin:15px auto; }
+    .rate-value{ font-size:48px; font-weight:bold; }
+    .progress-bar{ background:rgba(255,255,255,0.3); border-radius:20px; height:20px; overflow:hidden; margin-top:15px; }
+    .progress-fill{ height:100%; border-radius:20px; display:flex; align-items:center; justify-content:center; color:white; font-size:12px; }
+    .trends-card{ background:white; border-radius:16px; margin-bottom:25px; overflow:hidden; }
+    .chart-bars{ display:flex; justify-content:space-around; align-items:flex-end; padding:20px; height:200px; }
+    .bar-item{ text-align:center; flex:1; }
+    .bar{ width:40px; background:#667eea; border-radius:8px 8px 0 0; margin:0 auto; transition:height 0.3s; }
+    .bar-label{ display:block; margin-top:10px; font-size:12px; }
+    .bar-value{ display:block; font-size:11px; color:#666; }
+    .rate-progress{ background:#e9ecef; border-radius:20px; height:25px; overflow:hidden; width:120px; }
+    .rate-fill{ height:100%; border-radius:20px; display:flex; align-items:center; justify-content:center; color:white; font-size:11px; }
+    .stats-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:15px; }
+    .stat-item{ text-align:center; padding:15px; background:#f8f9fa; border-radius:12px; }
+    .stat-title{ font-weight:bold; font-size:16px; margin-bottom:10px; }
+    .stat-value{ font-size:32px; font-weight:700; color:#667eea; }
+    .stat-label{ font-size:12px; color:#666; }
+    .stat-sub{ font-size:11px; color:#999; margin-top:5px; }
+    .btn-small{ padding:5px 12px; background:#667eea; color:white; text-decoration:none; border-radius:5px; font-size:12px; }
+    .btn-success{ background:#28a745; color:white; padding:10px 20px; border-radius:8px; text-decoration:none; }
+    .table-responsive{ overflow-x:auto; }
+    .table{ width:100%; border-collapse:collapse; }
+    .table th,.table td{ padding:12px; text-align:left; border-bottom:1px solid #e9ecef; }
+    .table th{ background:#f8f9fa; }
+    @media(max-width:768px){ .metrics-grid{ grid-template-columns:repeat(2,1fr); } .chart-bars{ height:150px; } .bar{ width:25px; } }
+</style>
+{% endblock %}

@@ -1,0 +1,301 @@
+﻿{% extends 'base.html' %}
+{% block title %}Face Recognition Attendance{% endblock %}
+{% block content %}
+<div class="enroll-container">
+    <div class="enroll-card">
+        <h1>📸 Face Recognition Attendance</h1>
+        <p>Position your face clearly in front of the camera.</p>
+
+        <!-- Session Selection -->
+        <div style="margin-bottom: 15px; text-align: left;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">Select Session:</label>
+            <select id="sessionSelect" style="width: 100%; padding: 8px; border-radius: 5px; border: 1px solid #ddd;">
+                <option value="">-- Select Session --</option>
+                {% for session in sessions %}
+                <option value="{{ session.id }}">{{ session.course_code }} - {{ session.topic|default:session.course_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Mode Selection -->
+        <div style="margin-bottom: 15px; text-align: left;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">Mode:</label>
+            <div style="display: flex; gap: 20px;">
+                <label><input type="radio" name="mode" value="checkin" checked> ✅ Check In</label>
+                <label><input type="radio" name="mode" value="checkout"> 📤 Check Out</label>
+            </div>
+        </div>
+
+        <!-- Camera with overlay -->
+        <div class="video-container" style="position: relative;">
+            <video id="video" width="480" height="360" autoplay playsinline style="border:2px solid #ddd; border-radius:10px; width:100%;"></video>
+            <canvas id="overlayCanvas" width="480" height="360" style="position: absolute; top: 0; left: 0; width:100%; height:100%; pointer-events: none;"></canvas>
+            <canvas id="canvas" width="480" height="360" style="display:none;"></canvas>
+            <div id="autoStatus" style="position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.6); color: white; padding: 4px 10px; border-radius: 5px; font-size: 11px;">⚫ Auto: OFF</div>
+        </div>
+
+        <div class="button-group">
+            <button class="btn btn-primary" onclick="startCamera()">🎥 Start Camera</button>
+            <button class="btn btn-warning" id="autoBtn" onclick="toggleAutoDetect()" style="background:#ffc107; color:#333;">🤖 Start Auto Mark</button>
+            <button class="btn btn-success" onclick="captureAndRecognize()">📸 Manual Capture</button>
+        </div>
+
+        <div id="result" class="result-message"></div>
+        
+        <!-- User Details Card -->
+        <div id="userDetails" style="display: none; margin-top: 15px; padding: 15px; border-radius: 12px; color: white; text-align: left;">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div id="userIcon" style="font-size: 40px;">✅</div>
+                <div style="flex: 1;">
+                    <div id="recognizedName" style="font-size: 16px; font-weight: bold;"></div>
+                    <div id="recognizedReg" style="font-size: 11px; opacity: 0.9; margin-top: 3px;"></div>
+                    <div id="recognizedStatus" style="font-size: 12px; margin-top: 5px;"></div>
+                </div>
+                <div id="recognizedTime" style="font-size: 10px; opacity: 0.8;"></div>
+            </div>
+        </div>
+
+        <div class="tips">
+            <h4>💡 Features:</h4>
+            <ul>
+                <li>✅ Green box around recognized face</li>
+                <li>✅ Auto marking every 3 seconds</li>
+                <li>✅ Prevents duplicate marking</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<style>
+    .enroll-container{ display:flex; justify-content:center; align-items:center; min-height:80vh; padding:20px; }
+    .enroll-card{ background:white; border-radius:20px; padding:30px; max-width:600px; width:100%; box-shadow:0 10px 40px rgba(0,0,0,0.1); text-align:center; }
+    .video-container{ position:relative; margin-bottom:20px; background:#f0f2f5; border-radius:10px; padding:10px; display: inline-block; width:100%; }
+    video, #overlayCanvas{ width:100%; height:auto; border-radius:10px; }
+    .button-group{ display:flex; gap:10px; justify-content:center; margin-bottom:20px; flex-wrap:wrap; }
+    .btn{ padding:10px 20px; border:none; border-radius:8px; font-size:13px; cursor:pointer; transition:all 0.3s; }
+    .btn-primary{ background:#667eea; color:white; }
+    .btn-warning{ background:#ffc107; color:#333; }
+    .btn-success{ background:#28a745; color:white; }
+    .btn:hover{ transform:translateY(-2px); opacity:0.9; }
+    .result-message{ margin-top:15px; padding:12px; border-radius:8px; font-weight:500; }
+    .result-message.success{ background:#d4edda; color:#155724; border-left: 4px solid #28a745; }
+    .result-message.error{ background:#f8d7da; color:#721c24; border-left: 4px solid #dc3545; }
+    .result-message.warning{ background:#fff3cd; color:#856404; border-left: 4px solid #ffc107; }
+    .tips{ text-align:left; margin-top:20px; padding-top:20px; border-top:1px solid #eee; }
+    .tips ul{ margin:0; padding-left:20px; }
+    .tips li{ color:#666; margin:5px 0; }
+    .card-success{ background: linear-gradient(135deg, #28a745 0%, #20c997 100%); }
+</style>
+
+<script>
+    let video = document.getElementById('video');
+    let canvas = document.getElementById('canvas');
+    let overlayCanvas = document.getElementById('overlayCanvas');
+    let overlayCtx = overlayCanvas.getContext('2d');
+    let context = canvas.getContext('2d');
+    let stream = null;
+    let autoInterval = null;
+    let isAuto = false;
+    let processed = new Set();
+    let displayTimeout = null;
+    let videoWidth = 480, videoHeight = 360;
+
+    function drawGreenBox(x, y, w, h, name) {
+        console.log('Drawing green box at:', x, y, w, h, 'for:', name);
+        
+        // Clear previous drawings
+        overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+        
+        // Scale coordinates if needed (canvas might be scaled)
+        let scaleX = overlayCanvas.width / videoWidth;
+        let scaleY = overlayCanvas.height / videoHeight;
+        
+        let scaledX = x * scaleX;
+        let scaledY = y * scaleY;
+        let scaledW = w * scaleX;
+        let scaledH = h * scaleY;
+        
+        // Draw green rectangle
+        overlayCtx.strokeStyle = '#28a745';
+        overlayCtx.lineWidth = 3;
+        overlayCtx.strokeRect(scaledX, scaledY, scaledW, scaledH);
+        
+        // Draw label background
+        overlayCtx.fillStyle = '#28a745';
+        overlayCtx.fillRect(scaledX, scaledY - 25, Math.min(130, scaledW + 20), 22);
+        
+        // Draw label text
+        overlayCtx.fillStyle = '#ffffff';
+        overlayCtx.font = 'bold 12px Arial';
+        overlayCtx.fillText(name || 'Student', scaledX + 5, scaledY - 8);
+        
+        // Clear after 5 seconds
+        setTimeout(() => {
+            overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+        }, 5000);
+    }
+
+    function startCamera() {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+
+        navigator.mediaDevices.getUserMedia({
+            video: { width: 480, height: 360, facingMode: "user" }
+        })
+        .then(s => {
+            stream = s;
+            video.srcObject = stream;
+            video.play();
+            
+            video.onloadedmetadata = () => {
+                videoWidth = video.videoWidth;
+                videoHeight = video.videoHeight;
+                overlayCanvas.width = videoWidth;
+                overlayCanvas.height = videoHeight;
+                canvas.width = videoWidth;
+                canvas.height = videoHeight;
+                console.log('Video dimensions:', videoWidth, videoHeight);
+            };
+            
+            showResultMessage('Camera started!', 'success');
+            document.getElementById('autoBtn').style.display = 'inline-block';
+        })
+        .catch(err => {
+            showResultMessage('Camera error: ' + err.message, 'error');
+        });
+    }
+
+    function showResultMessage(msg, type) {
+        let d = document.getElementById('result');
+        d.innerHTML = msg;
+        d.className = 'result-message ' + type;
+        setTimeout(() => { d.innerHTML = ''; d.className = 'result-message'; }, 4000);
+    }
+
+    function showDisplay(name, reg, message, statusType, faceLocation) {
+        let userCard = document.getElementById('userDetails');
+        let userIcon = document.getElementById('userIcon');
+        
+        userCard.className = 'card-success';
+        userIcon.innerHTML = '✅';
+        userCard.style.display = 'block';
+        
+        document.getElementById('recognizedName').innerHTML = '👤 ' + name;
+        document.getElementById('recognizedReg').innerHTML = reg ? '📋 ' + reg : '';
+        document.getElementById('recognizedStatus').innerHTML = message;
+        document.getElementById('recognizedTime').innerHTML = new Date().toLocaleTimeString();
+        
+        // Draw green box if face location provided
+        if (faceLocation && faceLocation.x) {
+            drawGreenBox(faceLocation.x, faceLocation.y, faceLocation.w, faceLocation.h, name);
+        }
+        
+        if (displayTimeout) clearTimeout(displayTimeout);
+        displayTimeout = setTimeout(() => {
+            userCard.style.display = 'none';
+        }, 5000);
+    }
+
+    function captureAndRecognize() {
+        let sessionId = document.getElementById('sessionSelect').value;
+        let mode = document.querySelector('input[name="mode"]:checked').value;
+        if (!sessionId) { showResultMessage('Select session', 'error'); return; }
+        if (!video.videoWidth) { showResultMessage('Start camera first', 'error'); return; }
+
+        overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0);
+        let imageData = canvas.toDataURL('image/jpeg');
+
+        showResultMessage('Processing...', 'info');
+        fetch('/api/recognition/recognize/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image: imageData, session_id: sessionId, mode: mode })
+        })
+        .then(r => r.json())
+        .then(data => {
+            console.log('Recognition data:', data);
+            
+            if (data.recognized === true) {
+                let name = data.name || data.username || 'Student';
+                let reg = data.reg_no || '';
+                let message = data.message || (data.attendance_marked ? 'Attendance marked!' : (data.already_checked_in ? 'Already checked in' : 'Recognized'));
+                
+                showDisplay(name, reg, message, 'success', data.face_location);
+                showResultMessage('✅ ' + name + ' - ' + message, 'success');
+            } else if (data.total_faces > 0) {
+                showDisplay('Unknown', '', 'Face not registered in system', 'error', null);
+                showResultMessage('❌ Face not recognized - Not registered', 'error');
+            } else {
+                showDisplay('No Face', '', 'No face detected', 'error', null);
+                showResultMessage('❌ No face detected', 'error');
+            }
+        })
+        .catch(e => showResultMessage('Error: ' + e.message, 'error'));
+    }
+
+    function toggleAutoDetect() {
+        let sessionId = document.getElementById('sessionSelect').value;
+        if (!sessionId) { showResultMessage('Select session first', 'error'); return; }
+        if (!video.videoWidth) { showResultMessage('Start camera first', 'error'); return; }
+
+        if (isAuto) {
+            clearInterval(autoInterval);
+            isAuto = false;
+            document.getElementById('autoBtn').innerHTML = '🤖 Start Auto Mark';
+            document.getElementById('autoBtn').style.background = '#ffc107';
+            document.getElementById('autoBtn').style.color = '#333';
+            document.getElementById('autoStatus').innerHTML = '⚫ Auto: OFF';
+            showResultMessage('Auto marking stopped', 'info');
+        } else {
+            processed.clear();
+            isAuto = true;
+            document.getElementById('autoBtn').innerHTML = '⏹️ Stop Auto Mark';
+            document.getElementById('autoBtn').style.background = '#dc3545';
+            document.getElementById('autoBtn').style.color = 'white';
+            document.getElementById('autoStatus').innerHTML = '🟢 Auto: RUNNING';
+            showResultMessage('Auto marking running!', 'success');
+            
+            function doAuto() {
+                let mode = document.querySelector('input[name="mode"]:checked').value;
+                let sId = document.getElementById('sessionSelect').value;
+                if (!sId || !video.videoWidth) return;
+                
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                context.drawImage(video, 0, 0);
+                let imgData = canvas.toDataURL('image/jpeg');
+                
+                fetch('/api/recognition/recognize/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: imgData, session_id: sId, mode: mode })
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.recognized === true) {
+                        let key = data.username || data.name;
+                        if (!processed.has(key)) {
+                            processed.add(key);
+                            let name = data.name || data.username || 'Student';
+                            let reg = data.reg_no || '';
+                            let message = data.message || (data.attendance_marked ? 'Marked' : (data.already_checked_in ? 'Already checked in' : 'OK'));
+                            showDisplay(name, reg, message, 'success', data.face_location);
+                            setTimeout(() => processed.delete(key), 10000);
+                        }
+                    }
+                })
+                .catch(e => console.log);
+            }
+            
+            doAuto();
+            autoInterval = setInterval(doAuto, 3000);
+        }
+    }
+
+    startCamera();
+</script>
+{% endblock %}

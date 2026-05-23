@@ -1,0 +1,108 @@
+﻿{% extends 'base.html' %}
+{% block title %}Create Session{% endblock %}
+{% block content %}
+<div class="form-container">
+    <h1>Create Class Session</h1>
+    <form method="POST">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label>Course *</label>
+            <select name="course" required>
+                <option value="">-- Select Course --</option>
+                {% for c in courses %}
+                <option value="{{ c.id }}">{{ c.code }} - {{ c.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>Topic / Title *</label>
+            <input type="text" name="topic" placeholder="e.g., Week 1: Introduction to Computing" required>
+            <small style="color: #666; display: block; margin-top: 5px;">Example: Week 1: Introduction, Chapter 2: Data Structures, Lab Session 1</small>
+        </div>
+        
+        <div class="form-group">
+            <label>Venue</label>
+            <input type="text" name="venue" placeholder="e.g., LT1, Lab 3, Online">
+        </div>
+        
+        <div class="form-group">
+            <label>Start Date *</label>
+            <input type="date" name="start_date" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Start Time *</label>
+            <input type="time" name="start_time" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Duration (hours)</label>
+            <select name="duration">
+                <option value="1">1 hour</option>
+                <option value="2" selected>2 hours</option>
+                <option value="3">3 hours</option>
+            </select>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Create Session</button>
+        <a href="/admin-dashboard/sessions/" class="btn">Cancel</a>
+    </form>
+</div>
+
+<style>
+    .form-container {
+        max-width: 550px;
+        margin: 0 auto;
+        background: white;
+        padding: 30px;
+        border-radius: 16px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .form-group {
+        margin-bottom: 20px;
+    }
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #333;
+    }
+    .form-group input, .form-group select {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 14px;
+    }
+    .form-group small {
+        font-size: 12px;
+        color: #666;
+    }
+    .btn {
+        padding: 12px 24px;
+        border-radius: 8px;
+        text-decoration: none;
+        display: inline-block;
+        margin-right: 10px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+    }
+    .btn-primary {
+        background: #667eea;
+        color: white;
+    }
+    .btn-primary:hover {
+        background: #5a67d8;
+    }
+    .btn {
+        background: #e9ecef;
+        color: #333;
+    }
+    .btn:hover {
+        background: #dee2e6;
+    }
+</style>
+{% endblock %}
